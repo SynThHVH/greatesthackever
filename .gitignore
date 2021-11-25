@@ -1,8 +1,4 @@
-﻿################################################################################
-# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
-################################################################################
-
-/.vs/supremacy_csgo/v17/Preview
-/sonthtest
-/output
-/Debug
+\.vs
+\sonthtest
+\output
+\Debug
