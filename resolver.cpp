@@ -4,26 +4,22 @@ Resolver g_resolver{};;
 LagRecord* Resolver::FindIdealRecord(AimPlayer* data) {
 	LagRecord* first_valid, * current;
 
-	if (data->m_records.empty())
-		return nullptr;
+	if (data->m_records.empty()) return nullptr;
 
 	first_valid = nullptr;
 
 	// iterate records.
 	for (const auto& it : data->m_records) {
-		if (it->dormant() || it->immune() || !it->valid())
-			continue;
+		if (it->dormant() || it->immune() || !it->valid() || it->m_skip_due_to_resolver || !it->m_data_stored || !it->m_push_to_aimbot) continue;
 
 		// get current record.
 		current = it.get();
 
 		// first record that was valid, store it for later.
-		if (!first_valid)
-			first_valid = current;
+		if (!first_valid) first_valid = current;
 
 		// try to find a record with a shot, lby update, walking or no anti-aim.
-		if (it->m_shot || it->m_mode == Modes::RESOLVE_BODY || it->m_mode == Modes::RESOLVE_WALK || it->m_mode == Modes::RESOLVE_NONE)
-			return current;
+		if (it->m_shot || it->m_mode == Modes::RESOLVE_BODY || it->m_mode == Modes::RESOLVE_WALK || it->m_mode == Modes::RESOLVE_NONE) return current;
 	}
 
 	// none found above, return the first valid record if possible.
@@ -33,8 +29,7 @@ LagRecord* Resolver::FindIdealRecord(AimPlayer* data) {
 LagRecord* Resolver::FindLastRecord(AimPlayer* data) {
 	LagRecord* current;
 
-	if (data->m_records.empty())
-		return nullptr;
+	if (data->m_records.empty()) return nullptr;
 
 	// iterate records in reverse.
 	for (auto it = data->m_records.crbegin(); it != data->m_records.crend(); ++it) {
@@ -42,8 +37,7 @@ LagRecord* Resolver::FindLastRecord(AimPlayer* data) {
 
 		// if this record is valid.
 		// we are done since we iterated in reverse.
-		if (current->valid() && !current->immune() && !current->dormant())
-			return current;
+		if (current->valid() && !current->immune() && !current->dormant() && !current->m_skip_due_to_resolver && current->m_push_to_aimbot && current->m_data_stored) return current;
 	}
 
 	return nullptr;
@@ -321,7 +315,6 @@ void Resolver::LastMoveLby(LagRecord* record, AimPlayer* data, Player* player)
 		float delta = record->m_anim_time - move->m_anim_time;
 
 		record->m_mode = Modes::RESOLVE_LASTMOVE;
-		//data->m_last_move
 
 		const float at_target_yaw = math::CalcAngle(g_cl.m_local->m_vecOrigin(), player->m_vecOrigin()).y;
 

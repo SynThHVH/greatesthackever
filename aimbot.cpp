@@ -185,6 +185,7 @@ void AimPlayer::UpdateAnimations(LagRecord* record) {
 	if (record->m_lag > 0 && record->m_lag < 16 && m_records.size() >= 2) {
 		// get pointer to previous record.
 		LagRecord* previous = m_records[1].get();
+		record->m_teleporting = record->m_origin.dist_to(previous->m_origin) > 4096.0f;
 
 		// valid previous record.
 		if (!record->dormant() && previous && !previous->dormant() && previous->valid() && previous->m_data_stored) {
@@ -370,6 +371,38 @@ void AimPlayer::UpdateAnimations(LagRecord* record) {
 
 			// valid previous record.
 			if (previous && !previous->dormant() && previous->m_data_stored) {
+				/*if ((record->m_layers[12].m_flWeight < 0.01f
+					|| abs(previous->m_layers[12].m_flWeight - record->m_layers[12].m_flWeight) < 0.01f)
+					&& previous->m_layers[6].m_nSequence == record->m_layers[6].m_nSequence)
+				{
+					//2 = -1; 3 = 1; 1 = fake;
+					if (std::abs(record->m_layers[6].m_flWeight - previous->m_layers[6].m_flWeight) < 0.01f)
+					{
+						float delta1 = std::abs(resolver_info->resolver_layers[0][6].m_flPlaybackRate - record->anim_layers[6].m_flPlaybackRate);
+						float delta2 = std::abs(resolver_info->resolver_layers[1][6].m_flPlaybackRate - record->anim_layers[6].m_flPlaybackRate);
+						float delta3 = std::abs(resolver_info->resolver_layers[2][6].m_flPlaybackRate - record->anim_layers[6].m_flPlaybackRate);
+
+						if (int(delta1 * 1000.f) < int(delta2 * 1000.f) || int(delta3 * 1000.f) <= int(delta2 * 1000.f) || int(delta2 * 1000.0f)) {
+							if (int(delta1 * 1000.f) >= int(delta3 * 1000.f) && int(delta2 * 1000.f) > int(delta3 * 1000.f) && !int(delta3 * 1000.0f))
+							{
+								record->animations_index = 1;
+								resolver_info->anims_pre_resolving = 1;
+								resolver_info->anim_time = csgo.m_globals()->realtime;
+								resolver_info->did_anims_update = true;
+								record->animations_updated = true;
+							}
+						}
+						else
+						{
+							record->animations_index = 2;
+							resolver_info->anims_pre_resolving = 2;
+							resolver_info->anim_time = csgo.m_globals()->realtime;
+							resolver_info->did_anims_update = true;
+							record->animations_updated = true;
+						}
+					}
+				}*/
+
 				const auto velocity_per_tick = (record->m_velocity - previous->m_velocity) / record->m_lag;
 
 				for (auto i = 1; i <= record->m_lag; i++) {
@@ -699,6 +732,8 @@ void AimPlayer::OnNetUpdate(Player* player) {
 		//else current->m_push_to_aimbot = true;
 	}
 
+	if (!m_records.front()->m_valid && m_records.front()->m_teleporting && m_records.size() > 0) { for (auto& record : m_records) record->m_skip_due_to_resolver = true; }
+
 	// no need to store insane amt of data.
 	while (m_records.size() > 128) m_records.pop_back(); // was 256; i thought that was a little much
 
@@ -883,6 +918,7 @@ void Aimbot::init() {
 	m_angle = ang_t{ };
 	m_damage = 0.f;
 	m_record = nullptr;
+	m_previous_record = nullptr;
 	m_stop = false;
 
 	m_best_dist = std::numeric_limits< float >::max();
@@ -960,8 +996,7 @@ void Aimbot::think() {
 }
 
 void Aimbot::find() {
-	struct BestTarget_t { Player* player; vec3_t pos; float damage; int hitbox; LagRecord* record; };
-
+	struct BestTarget_t { Player* player; vec3_t pos; float damage; int hitbox; LagRecord* record; LagRecord* prev_record; };
 	vec3_t       tmp_pos;
 	float        tmp_damage;
 	int          tmp_hitbox;
@@ -970,13 +1005,11 @@ void Aimbot::find() {
 	best.damage = -1.f;
 	best.pos = vec3_t{ };
 	best.record = nullptr;
+	best.prev_record = nullptr;
 	best.hitbox = -1;
 
-	if (m_targets.empty())
-		return;
-
-	if (g_cl.m_weapon_id == ZEUS && !g_menu.main.aimbot.zeusbot.get())
-		return;
+	if (m_targets.empty()) return;
+	if (g_cl.m_weapon_id == ZEUS && !g_menu.main.aimbot.zeusbot.get()) return;
 
 	// iterate all targets.
 	for (const auto& t : m_targets) {
@@ -996,7 +1029,7 @@ void Aimbot::find() {
 				best.pos = tmp_pos;
 				best.damage = tmp_damage;
 				best.record = ideal;
-
+				best.prev_record = t->m_records.at(1).get();
 #ifdef SONTHTEST // one of the very reasons i love this ide but this shit is fucked up let me do it in one line cunt
 				console::log(XOR("targeting ideal record\n"));
 #endif
@@ -1020,7 +1053,7 @@ void Aimbot::find() {
 			best.pos = tmp_pos;
 			best.damage = tmp_damage;
 			best.record = last;
-
+			best.prev_record = last;
 #ifdef SONTHTEST
 			console::log(XOR("targeting final record\n"));
 #endif
@@ -1040,73 +1073,11 @@ void Aimbot::find() {
 			best.pos = tmp_pos;
 			best.damage = tmp_damage;
 			best.record = front;
-
+			best.prev_record = t->m_records.at(1).get();
 #ifdef SONTHTEST
 			console::log(XOR("targeting front record\n"));
 #endif
 		}
-
-		// old supremacy targeting
-		/*
-		// this player broke lagcomp.
-		// his bones have been resetup by our lagcomp.
-		// therfore now only the front record is valid.
-		if (g_menu.main.aimbot.lagfix.get() && g_lagcomp.StartPrediction(t)) {
-			LagRecord* front = t->m_records.front().get();
-
-			t->SetupHitboxes(front, false);
-			if (t->m_hitboxes.empty())
-				continue;
-
-			// rip something went wrong..
-			if (t->GetBestAimPosition(tmp_pos, tmp_damage, front) && SelectTarget(front, tmp_pos, tmp_damage)) {
-
-				// if we made it so far, set shit.
-				best.player = t->m_player;
-				best.pos = tmp_pos;
-				best.damage = tmp_damage;
-				best.record = front;
-			}
-		}
-
-		// player did not break lagcomp.
-		// history aim is possible at this point.
-		else {
-			LagRecord* ideal = g_resolver.FindIdealRecord(t);
-			if (!ideal)
-				continue;
-
-			t->SetupHitboxes(ideal, false);
-			if (t->m_hitboxes.empty())
-				continue;
-
-			// try to select best record as target.
-			if (t->GetBestAimPosition(tmp_pos, tmp_damage, ideal) && SelectTarget(ideal, tmp_pos, tmp_damage)) {
-				// if we made it so far, set shit.
-				best.player = t->m_player;
-				best.pos = tmp_pos;
-				best.damage = tmp_damage;
-				best.record = ideal;
-			}
-
-			LagRecord* last = g_resolver.FindLastRecord(t);
-			if (!last || last == ideal)
-				continue;
-
-			t->SetupHitboxes(last, true);
-			if (t->m_hitboxes.empty())
-				continue;
-
-			// rip something went wrong..
-			if (t->GetBestAimPosition(tmp_pos, tmp_damage, last) && SelectTarget(last, tmp_pos, tmp_damage)) {
-				// if we made it so far, set shit.
-				best.player = t->m_player;
-				best.pos = tmp_pos;
-				best.damage = tmp_damage;
-				best.record = last;
-			}
-		}
-		*/
 	}
 
 	// verify our target and set needed data.
@@ -1119,6 +1090,7 @@ void Aimbot::find() {
 		m_aim = best.pos;
 		m_damage = best.damage;
 		m_record = best.record;
+		m_previous_record = best.prev_record;
 		m_hitbox = best.hitbox;
 
 		// write data, needed for traces / etc.
@@ -1704,21 +1676,74 @@ void Aimbot::apply() {
 			// make sure to aim at un-interpolated data.
 			// do this so BacktrackEntity selects the exact record.
 			if (m_record && !m_record->m_exploiting && !m_record->m_broke_lc) {
-				//if (m_record->m_valid) {
-					// TODO; add another check to see if our simtime is valid & add our simtime proxy so we can have the most pristine data
-				g_cl.m_cmd->m_tick = game::TIME_TO_TICKS(m_record->m_sim_time + g_cl.m_lerp);
+				if (m_record->m_valid) {
+					//TODO; add another check to see if our simtime is valid & add our simtime proxy so we can have the most pristine data
+					g_cl.m_cmd->m_tick = game::TIME_TO_TICKS(m_record->m_sim_time + g_cl.m_lerp);
 #ifdef SONTHTEST
-				console::log(XOR("aiming at noninterpolated data\n"));
+					console::log(XOR("aiming at noninterpolated data\n"));
 #endif
-				//}
+				}
 
 				// we should aim at interpolated data while our selected tick isn't valid
-				//else {
-				//	g_cl.m_cmd->m_tick = game::TIME_TO_TICKS(m_target->m_flSimulationTime() + g_cl.m_lerp);
-//#ifdef SONTHTEST
-					//console::log(XOR("aiming at interpolated data\n"));
-//#endif
-				//}
+				else {
+					g_cl.m_cmd->m_tick = game::TIME_TO_TICKS(m_target->m_flSimulationTime() + g_cl.m_lerp);
+#ifdef SONTHTEST
+					console::log(XOR("aiming at interpolated data\n"));
+#endif
+				}
+			}
+
+			// i made an else statement here because this is something i should implement soon.
+			// i have an idea where i can make some sort of correction here for while our entity is breaking lag compensation,
+			// exploiting, etc; and by doing that making it so we can accurately hit these fuckers while they are doing so.
+			// i have a couple ideas about how to fix some but not all
+			//else if (m_record && m_record->m_broke_lc && !m_record->m_exploiting && !m_record->m_skip_due_to_resolver) {
+
+			//}
+
+			else if (m_record && (m_record->m_exploiting || m_record->m_skip_due_to_resolver)) {
+				int ticks_to_simulate = 1;
+				if (m_previous_record && !m_previous_record->dormant() && m_previous_record->m_data_stored) {
+					int simulation_ticks = game::TIME_TO_TICKS(m_record->m_sim_time - m_previous_record->m_sim_time);
+					if ((simulation_ticks - 1) > 31 || m_previous_record->m_sim_time == 0.f) simulation_ticks = 1;
+					auto layer_cycle = m_record->m_layers[11].m_cycle;
+					auto previous_playback = m_previous_record->m_layers[11].m_playback_rate;
+					if (previous_playback > 0.f && m_record->m_layers[11].m_playback_rate > 0.f
+						&& m_previous_record->m_layers[11].m_sequence == m_record->m_layers[11].m_sequence) {
+						auto previous_cycle = m_previous_record->m_layers[11].m_cycle;
+						simulation_ticks = 0;
+
+						if (previous_cycle > layer_cycle) layer_cycle = layer_cycle + 1.0f;
+						while (layer_cycle > previous_cycle) {
+							const auto ticks_backup = simulation_ticks;
+							const auto playback_mult_ipt = g_csgo.m_globals->m_interval * previous_playback;
+							previous_cycle = previous_cycle + (g_csgo.m_globals->m_interval * previous_playback);
+							if (previous_cycle >= 1.0f) previous_playback = m_record->m_layers[11].m_playback_rate;
+							++simulation_ticks;
+							if (previous_cycle > layer_cycle && (previous_cycle - layer_cycle) > (playback_mult_ipt * 0.5f)) simulation_ticks = ticks_backup;
+						}
+					}
+
+					ticks_to_simulate = simulation_ticks;
+
+					m_record->m_sim_time = m_previous_record->m_sim_time + game::TICKS_TO_TIME(simulation_ticks);
+#ifdef SONTHTEST
+					console::log(XOR("modulating simulation time to fix exploits\n"));
+#endif
+				}
+
+				// we don't need a valid record check here because this shit ain't gonna be valid lmfao
+				// maybe a valid sim time check after doing these calculations
+				g_cl.m_cmd->m_tick = game::TIME_TO_TICKS(m_record->m_sim_time + g_cl.m_lerp);
+
+				// push this shit to our aimbot
+				// i was really high when i wrote this explanation i hope someone can make some sense out of it as i still can.
+				// ( making this true will make our aimbot target our front tick only since our targeted entity is doing things that will make us not target backtrack; 
+				//   these other conditions should also not push to aimbot until we correct it by setting it to false when those flags are set to true )
+				m_record->m_push_to_aimbot = true;
+#ifdef SONTHTEST
+				console::log(XOR("modulation pushed to aimbot\n"));
+#endif
 			}
 
 			// set angles to target.

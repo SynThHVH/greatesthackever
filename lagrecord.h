@@ -49,7 +49,7 @@ public:
 	float   m_immune;
 	int     m_tick;
 	int     m_lag;
-	bool    m_dormant, m_first_after_dormancy, m_animated, m_data_stored, m_valid, m_push_to_aimbot;
+	bool    m_dormant, m_first_after_dormancy, m_animated, m_data_stored, m_valid, m_push_to_aimbot, m_teleporting;
 
 	// netvars.
 	float  m_sim_time;
@@ -246,24 +246,5 @@ public:
 		float correct = std::clamp(nci->GetAvgLatency(INetChannel::FLOW_OUTGOING) + g_cl.m_lerp, 0.f, g_csgo.sv_maxunlag->GetFloat());
 		float delta = correct - (serverTime - flTargetTime);
 		return fabsf(delta) < 0.2f;
-
-		// previous/supremacy's version of this function
-		/*	// use prediction curtime for this.
-			float curtime = game::TICKS_TO_TIME( g_cl.m_local->m_nTickBase( ) );
-
-			// correct is the amount of time we have to correct game time,
-			float correct = g_cl.m_lerp + g_cl.m_latency;
-
-			// stupid fake latency goes into the incoming latency.
-			float in = g_csgo.m_net->GetLatency( INetChannel::FLOW_INCOMING );
-			correct += in;
-
-			// check bounds [ 0, sv_maxunlag ]
-			math::clamp( correct, 0.f, g_csgo.sv_maxunlag->GetFloat( ) );
-
-			// calculate difference between tick sent by player and our latency based tick.
-			// ensure this record isn't too old.
-			return std::abs( correct - ( curtime - m_sim_time ) ) < 0.19f;
-			*/
 	}
 };
