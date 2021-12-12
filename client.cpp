@@ -16,12 +16,6 @@ ulong_t __stdcall Client::init(void* arg) {
 	// welcome the user.
 	g_notify.add(tfm::format(XOR("welcome to rufarohook"), g_cl.m_user));
 
-#ifdef SONTHTEST
-	console::log(XOR("welcome tester!\nkeep an eye on this console while playing as this will help me figure out whats going wrong with the cheat!\nthis console will get updated and have more features at some point (dumping the _asm registers on crash, making this have commands you can execute, and suspending the process and dumping the console before closing)\nas the console is updated i will leave the update logs here and say what was changed, so keep an eye on this as this is a vital thing for you staging users to have!"));
-#elif _DEBUG
-	console::log(XOR("welcome tester!\nkeep an eye on this console while playing as this will help me figure out whats going wrong with the cheat!\nthis console will get updated and have more features at some point (dumping the _asm registers on crash, making this have commands you can execute, and suspending the process and dumping the console before closing)\nas the console is updated i will leave the update logs here and say what was changed, so keep an eye on this as this is a vital thing for you staging users to have!"));
-#endif
-
 	return 1;
 }
 

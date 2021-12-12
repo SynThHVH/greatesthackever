@@ -52,11 +52,11 @@ void InputPrediction::UpdatePrediction( ) {
 //		if (ticks > lag_limit) {
 //			auto delta = ticks - lag_limit;
 //#ifdef SONTHTEST
-//			console::log(XOR("rubber-banding detected!\n"));
+//			g_console.log(XOR("rubber-banding detected!\n"));
 //#endif
 //			for (int i = 0; i < delta; ++i) {
 //#ifdef SONTHTEST
-//				console::log(XOR("fixing rubber-banding\n"));
+//				g_console.log(XOR("fixing rubber-banding\n"));
 //#endif
 //				g_csgo.m_prediction->Update(g_csgo.m_cl->m_delta_tick, true, g_csgo.m_cl->m_last_command_ack, g_csgo.m_cl->m_last_outgoing_command + i);
 //			}

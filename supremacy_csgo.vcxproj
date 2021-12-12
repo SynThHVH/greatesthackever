@@ -271,6 +271,7 @@
     <ClCompile Include="matchframework.cpp" />
     <ClCompile Include="materialsystem.cpp" />
     <ClCompile Include="matrix.cpp" />
+    <ClCompile Include="proxies.cpp" />
     <ClCompile Include="raytracer.cpp" />
     <ClCompile Include="shadowmgr.cpp" />
     <ClCompile Include="csgo.cpp" />

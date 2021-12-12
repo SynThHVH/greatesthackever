@@ -120,6 +120,7 @@ public:
     void DrawHistorySkeleton(Player* player, int opacity);
     void DrawSkeleton(Player* player, int opacity);
     void RenderGlow();
+    void DrawHitSkeleton(ShotRecord* record);
     void DrawHitboxMatrix(LagRecord* record, Color col, float time);
     void DrawBeams();
     void DebugAimbotPoints(Player* player);

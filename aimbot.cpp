@@ -723,13 +723,6 @@ void AimPlayer::OnNetUpdate(Player* player) {
 
 		// create bone matrix for this record.
 		g_bones.setup(m_player, nullptr, current);
-
-		// this guy is probably exploiting; do not store his simulation time and let aimbot the ignore it.
-		//if (silent_update && current->m_exploiting) { // added the exploiting check to make sure it's more accurate
-		//	current->m_valid = false;
-		//	current->m_push_to_aimbot = false;
-		//}
-		//else current->m_push_to_aimbot = true;
 	}
 
 	if (!m_records.front()->m_valid && m_records.front()->m_teleporting && m_records.size() > 0) { for (auto& record : m_records) record->m_skip_due_to_resolver = true; }
@@ -740,7 +733,7 @@ void AimPlayer::OnNetUpdate(Player* player) {
 	//	 wow this guy is a gigantic homosexual
 	//	while (m_records.size() > 0 && m_records.front()->m_exploiting) { // TODO; fix why our exploiting check always returns true! ( either that or the nigga i tested it against was exploiting lmao )
 	//#ifdef SONTHTEST
-	//		console::log(tfm::format(XOR("player: %s is exploiting; deleting all of his records"), game::GetPlayerName(m_records.front()->m_player->index())).c_str());
+	//		g_console.log(tfm::format(XOR("player: %s is exploiting; deleting all of his records"), game::GetPlayerName(m_records.front()->m_player->index())).c_str());
 	//#endif
 	//		m_records.clear(); // TODO; test and see if our animation fix will correct this so we won't have to do this!
 	//	}
@@ -1031,7 +1024,7 @@ void Aimbot::find() {
 				best.record = ideal;
 				best.prev_record = t->m_records.at(1).get();
 #ifdef SONTHTEST // one of the very reasons i love this ide but this shit is fucked up let me do it in one line cunt
-				console::log(XOR("targeting ideal record\n"));
+				g_console.log(XOR("targeting ideal record\n"));
 #endif
 			}
 		}
@@ -1055,12 +1048,12 @@ void Aimbot::find() {
 			best.record = last;
 			best.prev_record = last;
 #ifdef SONTHTEST
-			console::log(XOR("targeting final record\n"));
+			g_console.log(XOR("targeting final record\n"));
 #endif
 		}
 
 		LagRecord* front = t->m_records.front().get();
-		if (!front || !front->m_data_stored || front->m_dormant || !front->m_push_to_aimbot) continue;
+		if ((!front || !front->m_data_stored || front->m_dormant || !front->m_push_to_aimbot) || (front->m_broke_lc && !g_lagcomp.StartPrediction(t))) continue;
 
 		t->SetupHitboxes(front, false);
 		if (t->m_hitboxes.empty()) continue;
@@ -1075,7 +1068,7 @@ void Aimbot::find() {
 			best.record = front;
 			best.prev_record = t->m_records.at(1).get();
 #ifdef SONTHTEST
-			console::log(XOR("targeting front record\n"));
+			g_console.log(XOR("targeting front record\n"));
 #endif
 		}
 	}
@@ -1100,7 +1093,7 @@ void Aimbot::find() {
 		bool hit = (!g_cl.m_ground && g_cl.m_weapon_id == SSG08 && g_cl.m_weapon && g_cl.m_weapon->GetInaccuracy() < 0.009f) || (on && CheckHitchance(m_target, m_angle, m_record, best.hitbox));
 
 		// do some premium autostop bullshit lmfao
-		if (g_menu.main.aimbot.autostop.get()) {
+		if (g_menu.main.aimbot.autostop.get() && (g_cl.m_weapon_type != WEAPONTYPE_KNIFE || g_cl.m_weapon_id != ZEUS)) {
 			// set autostop shit.
 			m_stop = !(g_cl.m_buttons & IN_JUMP) && on && !hit;
 
@@ -1125,7 +1118,7 @@ void Aimbot::find() {
 			// right click attack.
 			if (g_menu.main.config.mode.get() == 1 && g_cl.m_weapon_id == REVOLVER) {
 #ifdef SONTHTEST
-				console::log(XOR("pushing attack flag\n"));
+				g_console.log(XOR("pushing attack flag\n"));
 #endif
 				g_cl.m_cmd->m_buttons |= IN_ATTACK2;
 			}
@@ -1133,7 +1126,7 @@ void Aimbot::find() {
 			// left click attack.
 			else {
 #ifdef SONTHTEST
-				console::log(XOR("pushing attack flag\n"));
+				g_console.log(XOR("pushing attack flag\n"));
 #endif
 				g_cl.m_cmd->m_buttons |= IN_ATTACK;
 			}
@@ -1282,58 +1275,41 @@ bool Aimbot::CheckHitchance(Player* player, const ang_t& angle, LagRecord* recor
 		// get end of trace.
 		end = start + (dir * g_cl.m_weapon_info->m_range);
 
-		if (CanHit(start, end, record, hitbox)) {
-			penetration::PenetrationInput_t in;
-			in.m_damage = m_damage;
-			in.m_damage_pen = m_best_damage;
-			in.m_can_pen = true;
-			in.m_target = player;
-			in.m_from = g_cl.m_local;
-			in.m_pos = end;
-			penetration::PenetrationOutput_t out;
+		//penetration::PenetrationInput_t in;
+		//in.m_damage = m_damage;
+		//in.m_damage_pen = m_best_damage;
+		//in.m_can_pen = true;
+		//in.m_target = player;
+		//in.m_from = g_cl.m_local;
+		//in.m_pos = end;
+		//penetration::PenetrationOutput_t out;
 
-			// if this still doesn't work make this a while statement
-			if (penetration::run(&in, &out)) {
-				if (out.m_damage > 0.0f) {
-					accuracy_boost_seeds++;
-#ifdef SONTHTEST
-					console::log(XOR("accuracy seeds incremented\n"));
-#endif
-					g_cl.m_is_vulnerable = true;
-				}
-				else g_cl.m_is_vulnerable = false;
-			}
-
-			total_hits++;
-#ifdef SONTHTEST
-			console::log(XOR("hitchance seeds incremented\n"));
-#endif
-			g_cl.m_is_vulnerable = true;
-		} else g_cl.m_is_vulnerable = false;
+		//if (penetration::run(&in, &out)) { if (out.m_damage > 0.0f) { accuracy_boost_seeds++; g_cl.m_is_vulnerable = true; } else g_cl.m_is_vulnerable = false; }
+		if (CanHit(start, end, record, hitbox)) { total_hits++; g_cl.m_is_vulnerable = true; } else g_cl.m_is_vulnerable = false;
 
 		// we're done!
-		if (total_hits >= needed_hits && accuracy_boost_seeds >= needed_accuracy) {
+		if (total_hits >= needed_hits /* && accuracy_boost_seeds >= needed_accuracy */) {
 			m_hitchance_amount = total_hits - needed_hits; m_accuracy_amount = needed_accuracy;
 #ifdef SONTHTEST
-			console::log(tfm::format(XOR("hc: %i (%i, %i) | ab: %i:%i\n"), m_hitchance_amount, total_hits, needed_hits, accuracy_boost_seeds, needed_accuracy).c_str());
+			g_console.log(tfm::format(XOR("hc: %i (%i, %i) | ab: %i:%i\n"), m_hitchance_amount, total_hits, needed_hits, accuracy_boost_seeds, needed_accuracy).c_str());
 #endif
 			return true;
 		}
 
 		// we cannot hit this entity anymore
-		if ((SEED_MAX - i + total_hits) < needed_hits || (SEED_MAX - i + accuracy_boost_seeds) < needed_accuracy) {
+		if ((SEED_MAX - i + total_hits) < needed_hits /* || (SEED_MAX - i + accuracy_boost_seeds) < needed_accuracy*/) {
 
 			if ((SEED_MAX - i + total_hits) < needed_hits) {
 #ifdef SONTHTEST
-				console::log(tfm::format(XOR("seed generation failed!\n%i < %i"), (SEED_MAX - i + total_hits), needed_hits).c_str());
+				g_console.log(tfm::format(XOR("seed generation failed!\n%i < %i"), (SEED_MAX - i + total_hits), needed_hits).c_str());
 #endif
 			}
 
-			if ((SEED_MAX - i + accuracy_boost_seeds) < needed_accuracy) {
-#ifdef SONTHTEST
-				console::log(tfm::format(XOR("accuracy seed generation failed!\n%i < %i"), (SEED_MAX - i + accuracy_boost_seeds), needed_accuracy).c_str());
-#endif
-			}
+//			if ((SEED_MAX - i + accuracy_boost_seeds) < needed_accuracy + 1) {
+//#ifdef SONTHTEST
+//				g_console.log(tfm::format(XOR("accuracy seed generation failed!\n%i < %i"), (SEED_MAX - i + accuracy_boost_seeds), needed_accuracy).c_str());
+//#endif
+//			}
 
 			return false;
 		}
@@ -1514,7 +1490,7 @@ bool AimPlayer::GetBestAimPosition(vec3_t& aim, float& damage, int& hitbox, LagR
 				// we are done, stop now.
 				else if (it.m_mode == HitscanMode::LETHAL && out.m_damage >= m_player->m_iHealth()) {
 #ifdef SONTHTEST
-					console::log(XOR("best aim position targeted [lethal]; continuing loop\n"));
+					g_console.log(XOR("best aim position targeted [lethal]; continuing loop\n"));
 #endif
 					done = true;
 				}
@@ -1522,7 +1498,7 @@ bool AimPlayer::GetBestAimPosition(vec3_t& aim, float& damage, int& hitbox, LagR
 				// 2 shots will be sufficient to kill.
 				else if (it.m_mode == HitscanMode::LETHAL2 && (out.m_damage * 2.f) >= m_player->m_iHealth()) {
 #ifdef SONTHTEST
-					console::log(XOR("best aim position targeted [lethal2x]; continuing loop\n"));
+					g_console.log(XOR("best aim position targeted [lethal2x]; continuing loop\n"));
 #endif
 					done = true;
 				}
@@ -1536,13 +1512,13 @@ bool AimPlayer::GetBestAimPosition(vec3_t& aim, float& damage, int& hitbox, LagR
 						scan.m_pos = point;
 						scan.m_hitbox = it.m_index;
 #ifdef SONTHTEST
-						console::log(XOR("best aim position targeted [normal]; continuing loop\n"));
+						g_console.log(XOR("best aim position targeted [normal]; continuing loop\n"));
 #endif
 						// if the first point is lethal
 						// screw the other ones.
 						if (point == points.front() && out.m_damage >= m_player->m_iHealth()) {
 #ifdef SONTHTEST
-							console::log(XOR("best aim position targeted [first point]; breaking out of loop\n"));
+							g_console.log(XOR("best aim position targeted [first point]; breaking out of loop\n"));
 #endif
 							break;
 						}
@@ -1556,7 +1532,7 @@ bool AimPlayer::GetBestAimPosition(vec3_t& aim, float& damage, int& hitbox, LagR
 					scan.m_pos = point;
 					scan.m_hitbox = it.m_index;
 #ifdef SONTHTEST
-					console::log(XOR("best aim position targeted [prefered]; breaking out of loop\n"));
+					g_console.log(XOR("best aim position targeted [prefered]; breaking out of loop\n"));
 #endif
 					break;
 				}
@@ -1566,7 +1542,7 @@ bool AimPlayer::GetBestAimPosition(vec3_t& aim, float& damage, int& hitbox, LagR
 		// ghetto break out of outer loop.
 		if (done) {
 #ifdef SONTHTEST
-			console::log(XOR("best aim position recieved; breaking out of loop\n"));
+			g_console.log(XOR("best aim position recieved; breaking out of loop\n"));
 #endif
 			break;
 		}
@@ -1579,7 +1555,7 @@ bool AimPlayer::GetBestAimPosition(vec3_t& aim, float& damage, int& hitbox, LagR
 		damage = scan.m_damage;
 		hitbox = scan.m_hitbox;
 #ifdef SONTHTEST
-		console::log(XOR("best target set; finish aimbotting!\n"));
+		g_console.log(XOR("best target set; finish aimbotting!\n"));
 #endif
 		return true;
 	}
@@ -1675,22 +1651,22 @@ void Aimbot::apply() {
 		if (m_target) {
 			// make sure to aim at un-interpolated data.
 			// do this so BacktrackEntity selects the exact record.
-			if (m_record && !m_record->m_exploiting && !m_record->m_broke_lc) {
-				if (m_record->m_valid) {
+			if (m_record && !m_record->m_broke_lc) {
+				//if (m_record->m_valid) {
 					//TODO; add another check to see if our simtime is valid & add our simtime proxy so we can have the most pristine data
 					g_cl.m_cmd->m_tick = game::TIME_TO_TICKS(m_record->m_sim_time + g_cl.m_lerp);
 #ifdef SONTHTEST
-					console::log(XOR("aiming at noninterpolated data\n"));
+					g_console.log(XOR("aiming at noninterpolated data\n"));
 #endif
-				}
-
-				// we should aim at interpolated data while our selected tick isn't valid
-				else {
-					g_cl.m_cmd->m_tick = game::TIME_TO_TICKS(m_target->m_flSimulationTime() + g_cl.m_lerp);
-#ifdef SONTHTEST
-					console::log(XOR("aiming at interpolated data\n"));
-#endif
-				}
+//				}
+//
+//				// we should aim at interpolated data while our selected tick isn't valid
+//				else {
+//					g_cl.m_cmd->m_tick = game::TIME_TO_TICKS(m_target->m_flSimulationTime() + g_cl.m_lerp);
+//#ifdef SONTHTEST
+//					g_console.log(XOR("aiming at interpolated data\n"));
+//#endif
+//				}
 			}
 
 			// i made an else statement here because this is something i should implement soon.
@@ -1698,53 +1674,53 @@ void Aimbot::apply() {
 			// exploiting, etc; and by doing that making it so we can accurately hit these fuckers while they are doing so.
 			// i have a couple ideas about how to fix some but not all
 			//else if (m_record && m_record->m_broke_lc && !m_record->m_exploiting && !m_record->m_skip_due_to_resolver) {
-
+				
 			//}
 
-			else if (m_record && (m_record->m_exploiting || m_record->m_skip_due_to_resolver)) {
-				int ticks_to_simulate = 1;
-				if (m_previous_record && !m_previous_record->dormant() && m_previous_record->m_data_stored) {
-					int simulation_ticks = game::TIME_TO_TICKS(m_record->m_sim_time - m_previous_record->m_sim_time);
-					if ((simulation_ticks - 1) > 31 || m_previous_record->m_sim_time == 0.f) simulation_ticks = 1;
-					auto layer_cycle = m_record->m_layers[11].m_cycle;
-					auto previous_playback = m_previous_record->m_layers[11].m_playback_rate;
-					if (previous_playback > 0.f && m_record->m_layers[11].m_playback_rate > 0.f
-						&& m_previous_record->m_layers[11].m_sequence == m_record->m_layers[11].m_sequence) {
-						auto previous_cycle = m_previous_record->m_layers[11].m_cycle;
-						simulation_ticks = 0;
-
-						if (previous_cycle > layer_cycle) layer_cycle = layer_cycle + 1.0f;
-						while (layer_cycle > previous_cycle) {
-							const auto ticks_backup = simulation_ticks;
-							const auto playback_mult_ipt = g_csgo.m_globals->m_interval * previous_playback;
-							previous_cycle = previous_cycle + (g_csgo.m_globals->m_interval * previous_playback);
-							if (previous_cycle >= 1.0f) previous_playback = m_record->m_layers[11].m_playback_rate;
-							++simulation_ticks;
-							if (previous_cycle > layer_cycle && (previous_cycle - layer_cycle) > (playback_mult_ipt * 0.5f)) simulation_ticks = ticks_backup;
-						}
-					}
-
-					ticks_to_simulate = simulation_ticks;
-
-					m_record->m_sim_time = m_previous_record->m_sim_time + game::TICKS_TO_TIME(simulation_ticks);
-#ifdef SONTHTEST
-					console::log(XOR("modulating simulation time to fix exploits\n"));
-#endif
-				}
-
-				// we don't need a valid record check here because this shit ain't gonna be valid lmfao
-				// maybe a valid sim time check after doing these calculations
-				g_cl.m_cmd->m_tick = game::TIME_TO_TICKS(m_record->m_sim_time + g_cl.m_lerp);
-
-				// push this shit to our aimbot
-				// i was really high when i wrote this explanation i hope someone can make some sense out of it as i still can.
-				// ( making this true will make our aimbot target our front tick only since our targeted entity is doing things that will make us not target backtrack; 
-				//   these other conditions should also not push to aimbot until we correct it by setting it to false when those flags are set to true )
-				m_record->m_push_to_aimbot = true;
-#ifdef SONTHTEST
-				console::log(XOR("modulation pushed to aimbot\n"));
-#endif
-			}
+//			else if (m_record && (m_record->m_exploiting || m_record->m_skip_due_to_resolver)) {
+//				int ticks_to_simulate = 1;
+//				if (m_previous_record && !m_previous_record->dormant() && m_previous_record->m_data_stored) {
+//					int simulation_ticks = game::TIME_TO_TICKS(m_record->m_sim_time - m_previous_record->m_sim_time);
+//					if ((simulation_ticks - 1) > 31 || m_previous_record->m_sim_time == 0.f) simulation_ticks = 1;
+//					auto layer_cycle = m_record->m_layers[11].m_cycle;
+//					auto previous_playback = m_previous_record->m_layers[11].m_playback_rate;
+//					if (previous_playback > 0.f && m_record->m_layers[11].m_playback_rate > 0.f
+//						&& m_previous_record->m_layers[11].m_sequence == m_record->m_layers[11].m_sequence) {
+//						auto previous_cycle = m_previous_record->m_layers[11].m_cycle;
+//						simulation_ticks = 0;
+//
+//						if (previous_cycle > layer_cycle) layer_cycle = layer_cycle + 1.0f;
+//						while (layer_cycle > previous_cycle) {
+//							const auto ticks_backup = simulation_ticks;
+//							const auto playback_mult_ipt = g_csgo.m_globals->m_interval * previous_playback;
+//							previous_cycle = previous_cycle + (g_csgo.m_globals->m_interval * previous_playback);
+//							if (previous_cycle >= 1.0f) previous_playback = m_record->m_layers[11].m_playback_rate;
+//							++simulation_ticks;
+//							if (previous_cycle > layer_cycle && (previous_cycle - layer_cycle) > (playback_mult_ipt * 0.5f)) simulation_ticks = ticks_backup;
+//						}
+//					}
+//
+//					ticks_to_simulate = simulation_ticks;
+//
+//					m_record->m_sim_time = m_previous_record->m_sim_time + game::TICKS_TO_TIME(simulation_ticks);
+//#ifdef SONTHTEST
+//					g_console.log(XOR("modulating simulation time to fix exploits\n"));
+//#endif
+//				}
+//
+//				 we don't need a valid record check here because this shit ain't gonna be valid lmfao
+//				 maybe a valid sim time check after doing these calculations
+//				g_cl.m_cmd->m_tick = game::TIME_TO_TICKS(m_record->m_sim_time + g_cl.m_lerp);
+//
+//				 push this shit to our aimbot
+//				 i was really high when i wrote this explanation i hope someone can make some sense out of it as i still can.
+//				 ( making this true will make our aimbot target our front tick only since our targeted entity is doing things that will make us not target backtrack; 
+//				   these other conditions should also not push to aimbot until we correct it by setting it to false when those flags are set to true )
+//				m_record->m_push_to_aimbot = true;
+//#ifdef SONTHTEST
+//				g_console.log(XOR("modulation pushed to aimbot\n"));
+//#endif
+//			}
 
 			// set angles to target.
 			g_cl.m_cmd->m_view_angles = m_angle;

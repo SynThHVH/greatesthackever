@@ -2,6 +2,7 @@
 
 // pre-declare.
 class LagRecord;
+class console;
 
 class BackupRecord {
 public:
@@ -49,7 +50,7 @@ public:
 	float   m_immune;
 	int     m_tick;
 	int     m_lag;
-	bool    m_dormant, m_first_after_dormancy, m_animated, m_data_stored, m_valid, m_push_to_aimbot, m_teleporting;
+	bool    m_dormant, m_first_after_dormancy, m_animated, m_data_stored, m_valid, m_push_to_aimbot, m_teleporting, m_spinbotting, m_eye_yaw_updated;
 
 	// netvars.
 	float  m_sim_time;
@@ -131,6 +132,10 @@ public:
 
 		// allocate new memory.
 		m_bones = (BoneArray*)g_csgo.m_mem_alloc->Alloc(sizeof(BoneArray) * 128);
+
+#ifdef SONTHTEST
+		g_console.log(XOR("invalidated bone cache\n"));
+#endif
 	}
 
 	// function: allocates memory for SetupBones and stores relevant data.
@@ -143,7 +148,8 @@ public:
 		m_immune = player->m_fImmuneToGunGameDamageTime();
 		m_tick = g_csgo.m_cl->m_server_tick;
 		m_simtime_delay = m_tick - game::TICKS_TO_TIME(player->m_flSimulationTime());
-		m_exploiting = m_simtime_delay >= 12; // come the fuck at me homo
+		m_exploiting = /* maybe add an lc check here */ m_teleporting && m_simtime_delay >= 12; // come the fuck at me homo
+		m_push_to_aimbot = !m_exploiting && !m_broke_lc;
 
 		// netvars.
 		m_lagcorrected_time = m_sim_time = player->m_flSimulationTime();
@@ -182,10 +188,17 @@ public:
 
 		// we have stored all of our data
 		m_data_stored = true;
+
+#ifdef SONTHTEST
+		g_console.log(XOR("record stored\n"));
+#endif
 	}
 
 	// function: restores 'predicted' variables to their original.
 	__forceinline void predict() {
+#ifdef SONTHTEST
+		g_console.log(XOR("repredicting\n"));
+#endif
 		m_broke_lc = false;
 		m_extrapolated_origin = m_origin;
 		m_extrapolated_velocity = m_velocity;
@@ -207,6 +220,10 @@ public:
 
 		m_player->SetAbsAngles(m_abs_ang);
 		m_player->SetAbsOrigin(m_extrapolated_origin);
+
+#ifdef SONTHTEST
+		g_console.log(XOR("current records written to bone cache\n"));
+#endif
 	}
 
 	__forceinline bool dormant() {

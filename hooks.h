@@ -134,12 +134,6 @@ public:
 	GetActiveWeapon_t           m_GetActiveWeapon;
 	BuildTransformations_t      m_BuildTransformations;
 	StandardBlendingRules_t m_StandardBlendingRules;
-
-	// netvar proxies.
-	RecvVarProxy_t m_Pitch_original;
-	RecvVarProxy_t m_Body_original;
-	RecvVarProxy_t m_Force_original;
-	RecvVarProxy_t m_AbsYaw_original;
 };
 
 // note - dex; these are defined in player.cpp.
@@ -155,3 +149,16 @@ public:
 
 extern Hooks                g_hooks;
 extern CustomEntityListener g_custom_entity_listener;
+
+// namespace abuse by sonth
+namespace Proxies {
+	// netvar proxies.
+	extern RecvVarProxy_t m_Pitch_original;
+	extern RecvVarProxy_t m_Yaw_original;
+	extern RecvVarProxy_t m_Body_original;
+	extern RecvVarProxy_t m_SimTime_original;
+	extern RecvVarProxy_t m_Force_original;
+	extern RecvVarProxy_t m_AbsYaw_original;
+
+	void InitializeProxies();
+}

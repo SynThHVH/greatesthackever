@@ -48,6 +48,8 @@ public:
 	void ResolvePoses(Player* player, LagRecord* record);
 	void ResolveOverride(Player* player, LagRecord* record, AimPlayer* data);
 
+	void AntiFreestand(LagRecord* record);
+	void Reversed_AntiFreestand(LagRecord* record);
 	void AntiFreestand(Player* pEnemy, float& y, float flLeftDamage, float flRightDamage, float flRightFraction, float flLeftFraction, float flToMe, int& iShotsMissed);
 
 public:

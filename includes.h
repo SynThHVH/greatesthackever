@@ -44,6 +44,9 @@ using ulong_t = unsigned long;
 #include <filesystem>
 #include <streambuf>
 
+// custom console interface.
+#include "console.h"
+
 // our custom wrapper.
 #include "unique_vector.h"
 #include "tinyformat.h"
@@ -77,7 +80,6 @@ using ulong_t = unsigned long;
 #include "render.h"
 #include "pred.h"
 #include "lagrecord.h"
-#include "visuals.h"
 #include "movement.h"
 #include "bonesetup.h"
 #include "hvh.h"
@@ -91,6 +93,7 @@ using ulong_t = unsigned long;
 #include "skins.h"
 #include "events.h"
 #include "shots.h"
+#include "visuals.h"
 
 // gui includes.
 #include "json.h"
@@ -110,5 +113,3 @@ using ulong_t = unsigned long;
 #include "callbacks.h"
 #include "menu.h"
 #include "config.h"
-
-#include "console.h"

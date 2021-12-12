@@ -1741,6 +1741,78 @@ void Visuals::RenderGlow() {
 	}
 }
 
+// this might work; probably not though because i need to get my shot record and only that record, and build the bones off of that; not our normal records.
+void DrawHitSkeleton(LagRecord* record, Color col) {
+	if (!g_menu.main.aimbot.debugaim.get()) return;
+	if (!record || !record->m_bones) return;
+
+	const model_t* model;
+	studiohdr_t* hdr;
+	mstudiobone_t* bone;
+	int            parent;
+	vec3_t         bone_pos, parent_pos;
+	vec2_t         bone_pos_screen, parent_pos_screen;
+
+	model = record->m_player->GetModel();
+	if (!model) return;
+
+	hdr = g_csgo.m_model_info->GetStudioModel(model);
+	if (!hdr) return;
+
+	for (int i{ }; i < hdr->m_num_bones; ++i) {
+		// get bone.
+		bone = hdr->GetBone(i);
+		if (!bone || !(bone->m_flags & BONE_USED_BY_HITBOX)) continue;
+
+		// get parent bone.
+		parent = bone->m_parent;
+		if (parent == -1) continue;
+
+		// resolve main bone and parent bone positions.
+		record->m_bones->get_bone(bone_pos, i);
+		record->m_bones->get_bone(parent_pos, parent);
+
+		// world to screen both the bone parent bone then draw.
+		if (render::WorldToScreen(bone_pos, bone_pos_screen) && render::WorldToScreen(parent_pos, parent_pos_screen)) render::line(bone_pos_screen.x, bone_pos_screen.y, parent_pos_screen.x, parent_pos_screen.y, Color(255, 255, 255, 255));
+	}
+}
+
+// attempt 2.
+void Visuals::DrawHitSkeleton(ShotRecord* record) {
+	if (!g_menu.main.aimbot.debugaim.get()) return;
+	if (!record || !record->m_record->m_bones) return;
+
+	const model_t* model;
+	studiohdr_t*   hdr;
+	mstudiobone_t* bone;
+	int            parent;
+	vec3_t         bone_pos, parent_pos;
+	vec2_t         bone_pos_screen, parent_pos_screen;
+
+	model = record->m_target->GetModel();
+	if (!model) return;
+
+	hdr = g_csgo.m_model_info->GetStudioModel(model);
+	if (!hdr) return;
+
+	for (int i{ }; i < hdr->m_num_bones; ++i) {
+		// get bone.
+		bone = hdr->GetBone(i);
+		if (!bone || !(bone->m_flags & BONE_USED_BY_HITBOX)) continue;
+
+		// get parent bone.
+		parent = bone->m_parent;
+		if (parent == -1) continue;
+
+		// resolve main bone and parent bone positions.
+		record->m_record->m_bones->get_bone(bone_pos, i);
+		record->m_record->m_bones->get_bone(parent_pos, parent);
+
+		// world to screen both the bone parent bone then draw.
+		if (render::WorldToScreen(bone_pos, bone_pos_screen) && render::WorldToScreen(parent_pos, parent_pos_screen)) render::line(bone_pos_screen.x, bone_pos_screen.y, parent_pos_screen.x, parent_pos_screen.y, Color(255, 255, 255, 255));
+	}
+}
+
 void Visuals::DrawHitboxMatrix(LagRecord* record, Color col, float time) {
 	if (!g_menu.main.aimbot.debugaim.get()) return;
 

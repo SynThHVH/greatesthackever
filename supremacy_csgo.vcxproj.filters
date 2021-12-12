@@ -40,11 +40,11 @@
     <Filter Include="Source Files\sdk">
       <UniqueIdentifier>{12f020c6-9c3e-4f59-baf0-4bc965734b5a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\hooks\other">
+      <UniqueIdentifier>{cf094af6-5228-414e-9591-027ec0222da6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="aimbot.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="bonesetup.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -327,6 +327,9 @@
     <ClInclude Include="raytracer.h">
       <Filter>Header Files\sdk</Filter>
     </ClInclude>
+    <ClInclude Include="aimbot.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="bonesetup.cpp">
@@ -401,9 +404,6 @@
     <ClCompile Include="hooks.cpp">
       <Filter>Source Files\hooks</Filter>
     </ClCompile>
-    <ClCompile Include="wndproc.cpp">
-      <Filter>Source Files\hooks</Filter>
-    </ClCompile>
     <ClCompile Include="grenades.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -440,12 +440,6 @@
     <ClCompile Include="renderview.cpp">
       <Filter>Source Files\hooks\game</Filter>
     </ClCompile>
-    <ClCompile Include="cvar.cpp">
-      <Filter>Source Files\hooks</Filter>
-    </ClCompile>
-    <ClCompile Include="player.cpp">
-      <Filter>Source Files\hooks</Filter>
-    </ClCompile>
     <ClCompile Include="modelrender.cpp">
       <Filter>Source Files\hooks\game</Filter>
     </ClCompile>
@@ -473,9 +467,6 @@
     <ClCompile Include="button.cpp">
       <Filter>Source Files\menu</Filter>
     </ClCompile>
-    <ClCompile Include="firebullets.cpp">
-      <Filter>Source Files\hooks</Filter>
-    </ClCompile>
     <ClCompile Include="aimbot.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -502,6 +493,21 @@
     </ClCompile>
     <ClCompile Include="raytracer.cpp">
       <Filter>Source Files\sdk</Filter>
+    </ClCompile>
+    <ClCompile Include="cvar.cpp">
+      <Filter>Source Files\hooks\game</Filter>
+    </ClCompile>
+    <ClCompile Include="firebullets.cpp">
+      <Filter>Source Files\hooks\game</Filter>
+    </ClCompile>
+    <ClCompile Include="player.cpp">
+      <Filter>Source Files\hooks\game</Filter>
+    </ClCompile>
+    <ClCompile Include="wndproc.cpp">
+      <Filter>Source Files\hooks\other</Filter>
+    </ClCompile>
+    <ClCompile Include="proxies.cpp">
+      <Filter>Source Files\hooks\game</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

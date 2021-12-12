@@ -6,6 +6,7 @@ Netvars	   g_netvars{};;
 EntOffsets g_entoffsets{};;
 Menu       g_menu{};;
 Notify     g_notify{};;
+console    g_console{};;
 
 bool CSGO::init() {
 	m_done = false;
@@ -213,9 +214,9 @@ bool CSGO::init() {
 
 	// initalise our debug console if we need too
 #ifdef SONTHTEST
-	console::initialize("sonth's debug console!");
+	g_console.initialize("sonth's debug console!");
 #elif _DEBUG
-	console::initialize("sonth's debug console!");
+	g_console.initialize("sonth's debug console!");
 #endif
 
 	m_done = true;

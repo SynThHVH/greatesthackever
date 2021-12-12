@@ -63,8 +63,8 @@ public:
 
 	// data about the LBY proxy.
 	float m_body;
-	float m_old_body;
-	bool      m_has_body_updated;
+	float m_old_body, m_simtime_recieved_new_eyeangles_y, m_simtime_recieved_new_eyeangles_x;
+	bool  m_has_body_updated;
 
 	//std::deque< float >            m_lbyt_update;
 	//std::deque< float >			   m_prefer_stand;

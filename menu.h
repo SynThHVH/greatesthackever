@@ -56,10 +56,10 @@ public:
 		selection.setup(XOR("target selection"), XOR("selection"), { XOR("distance"), XOR("crosshair"), XOR("damage"), XOR("health"), XOR("lag"), XOR("height") });
 		RegisterElement(&selection);
 
-		hitbox.setup(XOR("hitbox"), XOR("hitbox"), { XOR("head"), XOR("chest"), XOR("body"), XOR("arms"), XOR("legs"), XOR("feet") });
+		hitbox.setup(XOR("hitbox"), XOR("hitbox"), { XOR("head"), XOR("neck"), XOR("chest"), XOR("body"), XOR("arms"), XOR("legs"), XOR("feet")});
 		RegisterElement(&hitbox);
 
-		hitbox_history.setup(XOR("hitbox history"), XOR("hitbox_history"), { XOR("head"), XOR("chest"), XOR("body"), XOR("arms"), XOR("legs"), XOR("feet") });
+		hitbox_history.setup(XOR("hitbox history"), XOR("hitbox_history"), { XOR("head"), XOR("neck"), XOR("chest"), XOR("body"), XOR("arms"), XOR("legs"), XOR("feet") });
 		RegisterElement(&hitbox_history);
 
 		multipoint.setup(XOR("multi-point"), XOR("multipoint"), { XOR("head"), XOR("chest"), XOR("body"), XOR("legs"), XOR("feet") });

@@ -32,14 +32,14 @@ bool LagCompensation::StartPrediction(AimPlayer* data) {
 		for (const auto& it : data->m_records) {
 			it->m_broke_lc = true;
 			it->m_push_to_aimbot = false;
-			if (it->valid() || it->m_valid) it->m_push_to_aimbot = true; // little nigger lag comp fix
+			if (it->valid() && it->m_valid) it->m_push_to_aimbot = true;
 		}
 	}
 
 	if (record->m_valid && record->m_exploiting && size > 0) {
 		for (auto& it : data->m_records) {
 			it->m_skip_due_to_resolver = true;
-			it->m_push_to_aimbot = false;
+			it->m_push_to_aimbot = true; // makes it force front record /shrug
 		}
 	}
 
@@ -105,6 +105,9 @@ bool LagCompensation::StartPrediction(AimPlayer* data) {
 }
 
 void LagCompensation::Extrapolation(LagRecord* record, bool m_was_in_air) {
+#ifdef SONTHTEST
+	g_console.log(XOR("extrapolating entities\n"));
+#endif
 	vec3_t                start, end, normal;
 	CGameTrace            trace;
 	CTraceFilterWorldOnly filter;
